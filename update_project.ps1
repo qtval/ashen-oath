@@ -3,7 +3,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot ".."))
+$repoRoot = if (Test-Path (Join-Path $PSScriptRoot ".git")) {
+    (Resolve-Path $PSScriptRoot)
+} else {
+    (Resolve-Path (Join-Path $PSScriptRoot ".."))
+}
 Set-Location $repoRoot
 
 function Finish([string]$message, [int]$exitCode = 0) {
