@@ -2,6 +2,8 @@ extends Control
 
 const STORY_PATH := "res://data/chapters/chapter_01.json"
 const SAVE_PATH := "user://ashen_oath_save.json"
+const SAVE_VERSION := 1
+const START_NODE_ID := "checkpoint_arrival"
 
 @onready var panel_text: Label = $Margin/Layout/Panel/PanelText
 @onready var speaker: Label = $Margin/Layout/Speaker
@@ -11,21 +13,38 @@ const SAVE_PATH := "user://ashen_oath_save.json"
 
 var nodes: Dictionary = {}
 var state := {"flags": {}, "stats": {}}
-var current_node_id := "checkpoint_arrival"
+var current_node_id := START_NODE_ID
 
 func _ready() -> void:
 	restart_button.pressed.connect(restart)
-	load_story()
+	if not load_story():
+		return
 	load_progress()
 	show_node(current_node_id)
 
-func load_story() -> void:
+func load_story() -> bool:
 	var file := FileAccess.open(STORY_PATH, FileAccess.READ)
+	if file == null:
+		show_error("The story file could not be opened.")
+		return false
 	var parsed = JSON.parse_string(file.get_as_text())
+	if not (parsed is Dictionary) or not parsed.has("nodes") or not (parsed["nodes"] is Array):
+		show_error("The story file is invalid.")
+		return false
 	for node in parsed.get("nodes", []):
+		if not (node is Dictionary) or not node.has("id"):
+			show_error("The story contains a node without an ID.")
+			return false
 		nodes[node["id"]] = node
+	if not nodes.has(START_NODE_ID):
+		show_error("The opening story node is missing.")
+		return false
+	return true
 
 func show_node(node_id: String) -> void:
+	if not nodes.has(node_id):
+		show_error("Story node not found: " + node_id)
+		return
 	current_node_id = node_id
 	var node: Dictionary = nodes[node_id]
 	panel_text.text = node.get("panel_description", "Artwork placeholder")
@@ -68,19 +87,28 @@ func conditions_met(required: Dictionary) -> bool:
 
 func save_progress() -> void:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	file.store_string(JSON.stringify({"node": current_node_id, "state": state}))
+	if file == null:
+		return
+	file.store_string(JSON.stringify({"version": SAVE_VERSION, "node": current_node_id, "state": state}))
 
 func load_progress() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
 		return
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return
 	var saved = JSON.parse_string(file.get_as_text())
-	if saved is Dictionary and nodes.has(saved.get("node", "")):
+	if saved is Dictionary and saved.get("version", 0) == SAVE_VERSION and nodes.has(saved.get("node", "")):
 		current_node_id = saved["node"]
 		state = saved.get("state", state)
 
 func restart() -> void:
 	state = {"flags": {}, "stats": {}}
-	current_node_id = "checkpoint_arrival"
+	current_node_id = START_NODE_ID
 	show_node(current_node_id)
 
+func show_error(message: String) -> void:
+	speaker.text = "PROJECT ERROR"
+	narrative.text = message
+	panel_text.text = "Unable to load this chapter."
+	push_error(message)

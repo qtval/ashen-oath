@@ -17,9 +17,10 @@ builds/
 Thumbs.db
 *.tmp
 *.log
+__pycache__/
+*.pyc
 
 # Local secrets
 .env
 *.keystore
 *.jks
-
