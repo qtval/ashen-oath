@@ -46,6 +46,12 @@ On Android, the official Godot editor can import and run the project directly. A
 3. Run the project in Godot and test the changed behavior.
 4. Commit the working result to GitHub.
 
+### Updating the project on Windows
+
+After Codex publishes new changes, close Godot (or save your work), then double-click `Update-Ashen-Oath.cmd` in the project folder. It downloads the latest version from GitHub and stops safely if you have local changes that could be overwritten. Reopen the project in Godot and press **Run Project** after the update.
+
+The updater requires Git, which is normally installed alongside GitHub CLI.
+
 Validate all chapter links and required fields with:
 
 ```text
